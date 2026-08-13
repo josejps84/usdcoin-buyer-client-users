@@ -7,19 +7,24 @@ export default function LoginForm({ onLoginSuccess, onSwitch }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("http://localhost:8080/api/login", {
+      console.log("Sending login request with data:", JSON.stringify(formData));
+      const res = await fetch("http://localhost:8081/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
       
-      if (!res.ok) throw new Error("Credenciales inválidas");
+      if (!res.ok) {
+        console.error("Login request failed with status:", res.status);
+        throw new Error("Credenciales inválidas");
+      }
       const data = await res.json();
       
       // Guardar el token devuelto por Go en el almacenamiento del navegador
       localStorage.setItem("token", data.token);
       onLoginSuccess();
     } catch (err) {
+      console.log(err);
       setError(err.message);
     }
   };

@@ -7,12 +7,12 @@ export default function RegisterForm({ onSwitch }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("http://localhost:8080/api/register", {
+      const res = await fetch("http://localhost:8081/api/users/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-      const data = await res.json();
+      const data = await res.text();
       
       if (!res.ok) throw new Error(data || "Error al registrar");
       setMessage("¡Usuario creado con éxito! Ya puedes iniciar sesión.");
