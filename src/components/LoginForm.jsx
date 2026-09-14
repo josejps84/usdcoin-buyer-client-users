@@ -1,26 +1,22 @@
 import { useState } from "react";
+import { apiFetch } from "../api";
 
 export default function LoginForm({ onLoginSuccess, onSwitch }) {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
+    console.log("Submitting form with data:");
     e.preventDefault();
     try {
-      console.log("Sending login request with data:", JSON.stringify(formData));
-      const res = await fetch("http://localhost:8081/api/users/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      
+      const res = await apiFetch("POST", "/api/users/login", formData);
+
+      console.log(res);
       if (!res.ok) {
-        console.error("Login request failed with status:", res.status);
         throw new Error("Credenciales inválidas");
       }
       const data = await res.json();
-      
-      // Guardar el token devuelto por Go en el almacenamiento del navegador
+
       localStorage.setItem("token", data.token);
       onLoginSuccess();
     } catch (err) {
@@ -32,7 +28,7 @@ export default function LoginForm({ onLoginSuccess, onSwitch }) {
   return (
     <div style={{ maxWidth: "300px", margin: "20px auto", textAlign: "center" }}>
       <h2>Iniciar Sesión</h2>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      <form noValidate onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
         <input type="email" placeholder="Correo" required onChange={e => setFormData({...formData, email: e.target.value})} />
         <input type="password" placeholder="Contraseña" required onChange={e => setFormData({...formData, password: e.target.value})} />
         <button type="submit">Ingresar</button>

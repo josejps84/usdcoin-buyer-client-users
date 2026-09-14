@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiFetch } from "../api";
 
 export default function RegisterForm({ onSwitch }) {
   const [formData, setFormData] = useState({ email: "", name: "", password: "" });
@@ -7,13 +8,9 @@ export default function RegisterForm({ onSwitch }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("http://localhost:8081/api/users/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+      const res = await apiFetch("POST", "/api/users/register", formData);
       const data = await res.text();
-      
+
       if (!res.ok) throw new Error(data || "Error al registrar");
       setMessage("¡Usuario creado con éxito! Ya puedes iniciar sesión.");
     } catch (err) {
