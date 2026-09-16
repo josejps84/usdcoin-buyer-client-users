@@ -22,6 +22,7 @@ export default function RegisterForm({ onSwitch }) {
     <div style={{ maxWidth: "300px", margin: "20px auto", textAlign: "center" }}>
       <h2>Crear Cuenta</h2>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <input type="text" placeholder="ID" required onChange={e => setFormData({...formData, identification: e.target.value})} />
         <input type="text" placeholder="Nombre" required onChange={e => setFormData({...formData, name: e.target.value})} />
         <input type="email" placeholder="Correo" required onChange={e => setFormData({...formData, email: e.target.value})} />
         <input type="password" placeholder="Contraseña" required onChange={e => setFormData({...formData, password: e.target.value})} />

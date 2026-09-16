@@ -1,12 +1,46 @@
 import { useNavigate } from "react-router-dom";
 import AccountsTable from "./AccountsTable";
+import { apiFetch } from "../api";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const isAdmin = true;
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
+  };
+
+  const handleAcceptEdit = async (account, updates, callbacks = {}) => {
+    const payload = {
+      accountNmbr: account.accountNmbr,
+      status: updates.status,
+      currency: updates.currency,
+    };
+
+    try {
+      const response = await apiFetch("PUT", "/api/accounts/edit", payload);
+      let responseBody = null;
+
+      try {
+        responseBody = await response.json();
+      } catch (parseError) {
+        console.log(parseError);
+        responseBody = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(responseBody?.message || "No se pudo actualizar la cuenta");
+      }
+
+      callbacks.onSuccess?.({
+        ...account,
+        ...updates,
+        ...(responseBody?.account || {}),
+      });
+    } catch (error) {
+      callbacks.onError?.(error.message);
+    }
   };
 
   return (
@@ -17,7 +51,7 @@ export default function Dashboard() {
           Cerrar Sesión
         </button>
       </div>
-      <AccountsTable />
+      <AccountsTable isAdmin={isAdmin} onAcceptEdit={handleAcceptEdit} />
     </div>
   );
 }
