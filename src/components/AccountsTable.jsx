@@ -6,6 +6,8 @@ const STATUS_OPTIONS = [
   { label: "Habilitada", value: 1 },
   { label: "Deshabilitada", value: 0 },
 ];
+const PAGE_SIZE_OPTIONS = [3, 5, 10, 20, 50];
+const DEFAULT_PAGE_SIZE = 10;
 
 export default function AccountsTable({ isAdmin = true, onAcceptEdit }) {
   const [accounts, setAccounts] = useState([]);
@@ -15,19 +17,51 @@ export default function AccountsTable({ isAdmin = true, onAcceptEdit }) {
   const [editValues, setEditValues] = useState({ currency: "", status: 0 });
   const [isSaving, setIsSaving] = useState(false);
   const [modalError, setModalError] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [totalItems, setTotalItems] = useState(0);
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
   useEffect(() => {
-    apiFetch("GET", "/api/accounts")
-      .then(async (res) => {
-          console.log("Response from /api/accounts:", res);
+    let ignore = false;
+
+    async function fetchAccounts() {
+      setLoading(true);
+      try {
+        const queryParams = new URLSearchParams({ page, pageSize }).toString();
+        const res = await apiFetch("GET", `/api/accounts?${queryParams}`);
         if (!res.ok) throw new Error("Error al cargar cuentas");
         const data = await res.json();
-        console.log(data.accounts);
+        if (ignore) return;
         setAccounts(data.accounts);
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
+        setTotalItems(data.totalItems ?? 0);
+      } catch (err) {
+        if (!ignore) setError(err.message);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    }
+
+    fetchAccounts();
+
+    return () => {
+      ignore = true;
+    };
+  }, [page, pageSize]);
+
+  const goToPreviousPage = () => {
+    setPage((current) => Math.max(0, current - 1));
+  };
+
+  const goToNextPage = () => {
+    setPage((current) => Math.min(totalPages - 1, current + 1));
+  };
+
+  const handlePageSizeChange = (event) => {
+    setPageSize(Number(event.target.value));
+    setPage(0);
+  };
 
   const hasChanges = useMemo(() => {
     if (!editingAccount) return false;
@@ -79,17 +113,25 @@ export default function AccountsTable({ isAdmin = true, onAcceptEdit }) {
     }
   };
 
-  if (loading) return <p>Cargando cuentas...</p>;
+  if (loading && accounts.length === 0) return <p>Cargando cuentas...</p>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;
-
-  console.log("primer elemento completo:", JSON.stringify(accounts[0], null, 2));
-  console.log("keys:", Object.keys(accounts[0] || {}));
 
   return (
     <div style={{ padding: "20px" }}>
       <style>{spinnerKeyframes}</style>
       <h2>Mis Cuentas</h2>
-      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "10px" }}>
+      {totalItems > 0 && (
+        <PaginationControls
+          page={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          loading={loading}
+          onPreviousPage={goToPreviousPage}
+          onNextPage={goToNextPage}
+          onPageSizeChange={handlePageSizeChange}
+        />
+      )}
+      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "10px", opacity: loading ? 0.6 : 1 }}>
         <thead>
           <tr>
             {/* TODO: Ajustar columnas cuando el endpoint esté definido */}
@@ -212,8 +254,58 @@ export default function AccountsTable({ isAdmin = true, onAcceptEdit }) {
   );
 }
 
+function PaginationControls({ page, totalPages, pageSize, loading, onPreviousPage, onNextPage, onPageSizeChange }) {
+  return (
+    <div style={paginationContainerStyle}>
+      <div style={paginationGroupStyle}>
+        <label htmlFor="page-size" style={labelStyle}>
+          Filas por página
+        </label>
+        <select id="page-size" value={pageSize} onChange={onPageSizeChange} style={selectStyle} disabled={loading}>
+          {PAGE_SIZE_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div style={paginationGroupStyle}>
+        <button
+          type="button"
+          onClick={onPreviousPage}
+          disabled={loading || page <= 0}
+          style={secondaryButtonStyle}
+        >
+          Anterior
+        </button>
+        <span>
+          Página {page + 1} de {totalPages}
+        </span>
+        <button
+          type="button"
+          onClick={onNextPage}
+          disabled={loading || page + 1 >= totalPages}
+          style={secondaryButtonStyle}
+        >
+          Siguiente
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const thStyle = { border: "1px solid #ddd", padding: "10px", backgroundColor: "#f5f5f5", textAlign: "left" };
 const tdStyle = { border: "1px solid #ddd", padding: "10px" };
+const paginationContainerStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  flexWrap: "wrap",
+  gap: "12px",
+  marginTop: "10px",
+};
+const paginationGroupStyle = { display: "flex", alignItems: "center", gap: "8px" };
 const iconButtonStyle = {
   border: "none",
   background: "transparent",
