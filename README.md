@@ -28,6 +28,9 @@ flowchart LR
 | [java-wallet-account](https://github.com/josejps84/java-wallet-account) | Cuentas y movimientos |
 | [py-wallet-audit](https://github.com/josejps84/py-wallet-audit) | Guarda los eventos de auditoría |
 | **usdcoin-buyer-client-users** | Interfaz web (este repo) |
+| [java-wallet-stack](https://github.com/josejps84/java-wallet-stack) | Docker Compose para levantar todo el sistema y pruebas de punta a punta |
+
+> **¿Quieres levantar todo el sistema?** [java-wallet-stack](https://github.com/josejps84/java-wallet-stack) levanta la infraestructura y los 5 servicios con un solo `docker compose up`, compilando cada servicio desde su repo. También trae un smoke test de punta a punta.
 
 ## Stack
 
