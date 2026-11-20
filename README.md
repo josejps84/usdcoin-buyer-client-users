@@ -1,16 +1,29 @@
-# React + Vite
+# USD Coin Buyer – web client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite front end of the wallet. It only talks to the API gateway (`java-wallet-gateway`, port 9000 by default).
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```sh
+cp .env.example .env   # VITE_API_HOST / VITE_API_PORT point to the gateway
+npm install
+npm run dev
+```
 
-## React Compiler
+## Scripts
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `npm run dev` – dev server with HMR
+- `npm run build` – production build in `dist/`
+- `npm run lint` – ESLint
 
-## Expanding the ESLint configuration
+## Docker
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```sh
+docker build --build-arg VITE_API_HOST=http://localhost --build-arg VITE_API_PORT=9000 -t wallet-client .
+docker run -p 8080:80 wallet-client
+```
+
+## Notes
+
+- The JWT is kept in `localStorage` and decoded client side only to decide what to show (e.g. admin actions); every permission is enforced by the backend.
+- Backend errors are RFC 9457 `ProblemDetail` objects; `errorMessage()` in `src/api.js` shows their `detail`.

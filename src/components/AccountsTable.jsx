@@ -1,20 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
-import { apiFetch } from "../api";
+import { apiFetch, errorMessage, SessionExpiredError } from "../api";
 
 const CURRENCY_OPTIONS = ["USD", "EUR", "PES"];
+// Values match the backend AccountStatus enum
 const STATUS_OPTIONS = [
-  { label: "Habilitada", value: 1 },
-  { label: "Deshabilitada", value: 0 },
+  { label: "Habilitada", value: "ACTIVE" },
+  { label: "Deshabilitada", value: "INACTIVE" },
 ];
+const EMPTY_EDIT_VALUES = { currency: "", status: "ACTIVE" };
 const PAGE_SIZE_OPTIONS = [3, 5, 10, 20, 50];
 const DEFAULT_PAGE_SIZE = 10;
 
-export default function AccountsTable({ isAdmin = true, onAcceptEdit }) {
+export default function AccountsTable({ isAdmin = false, onAcceptEdit, onSessionExpired }) {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editingAccount, setEditingAccount] = useState(null);
-  const [editValues, setEditValues] = useState({ currency: "", status: 0 });
+  const [editValues, setEditValues] = useState(EMPTY_EDIT_VALUES);
   const [isSaving, setIsSaving] = useState(false);
   const [modalError, setModalError] = useState("");
   const [page, setPage] = useState(0);
@@ -31,12 +33,17 @@ export default function AccountsTable({ isAdmin = true, onAcceptEdit }) {
       try {
         const queryParams = new URLSearchParams({ page, pageSize }).toString();
         const res = await apiFetch("GET", `/api/accounts?${queryParams}`);
-        if (!res.ok) throw new Error("Error al cargar cuentas");
+        if (!res.ok) throw new Error(await errorMessage(res, "Error al cargar cuentas"));
         const data = await res.json();
         if (ignore) return;
+        setError("");
         setAccounts(data.accounts);
         setTotalItems(data.totalItems ?? 0);
       } catch (err) {
+        if (err instanceof SessionExpiredError) {
+          onSessionExpired?.();
+          return;
+        }
         if (!ignore) setError(err.message);
       } finally {
         if (!ignore) setLoading(false);
@@ -48,7 +55,7 @@ export default function AccountsTable({ isAdmin = true, onAcceptEdit }) {
     return () => {
       ignore = true;
     };
-  }, [page, pageSize]);
+  }, [page, pageSize, onSessionExpired]);
 
   const goToPreviousPage = () => {
     setPage((current) => Math.max(0, current - 1));
@@ -68,7 +75,7 @@ export default function AccountsTable({ isAdmin = true, onAcceptEdit }) {
 
     return (
       editValues.currency !== (editingAccount.currency || "") ||
-      editValues.status !== (editingAccount.status === "INACTIVE" ? 0 : 1)
+      editValues.status !== editingAccount.status
     );
   }, [editValues.currency, editValues.status, editingAccount]);
 
@@ -76,14 +83,14 @@ export default function AccountsTable({ isAdmin = true, onAcceptEdit }) {
     setEditingAccount(account);
     setEditValues({
       currency: account.currency || "",
-      status: account.status === "INACTIVE" ? 0 : 1,
+      status: account.status || "ACTIVE",
     });
   };
 
   const closeEditPanel = () => {
     if (isSaving) return;
     setEditingAccount(null);
-    setEditValues({ currency: "", status: 0 });
+    setEditValues(EMPTY_EDIT_VALUES);
   };
 
   const handleAccept = async () => {
@@ -101,7 +108,7 @@ export default function AccountsTable({ isAdmin = true, onAcceptEdit }) {
               )
             );
             setEditingAccount(null);
-            setEditValues({ currency: "", status: 0 });
+            setEditValues(EMPTY_EDIT_VALUES);
           },
           onError: (message) => {
             setModalError(message);
@@ -119,7 +126,7 @@ export default function AccountsTable({ isAdmin = true, onAcceptEdit }) {
   return (
     <div style={{ padding: "20px" }}>
       <style>{spinnerKeyframes}</style>
-      <h2>Mis Cuentas</h2>
+      <h2>{isAdmin ? "Todas las cuentas" : "Mis Cuentas"}</h2>
       {totalItems > 0 && (
         <PaginationControls
           page={page}
@@ -134,7 +141,6 @@ export default function AccountsTable({ isAdmin = true, onAcceptEdit }) {
       <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "10px", opacity: loading ? 0.6 : 1 }}>
         <thead>
           <tr>
-            {/* TODO: Ajustar columnas cuando el endpoint esté definido */}
             <th style={thStyle}>Account Number</th>
             <th style={thStyle}>Balance</th>
             <th style={thStyle}>Currency</th>
@@ -146,11 +152,10 @@ export default function AccountsTable({ isAdmin = true, onAcceptEdit }) {
         <tbody>
           {accounts.map((account, i) => (
             <tr key={account.accountNmbr || i}>
-              {/* TODO: Mapear campos reales del endpoint */}
               <td style={tdStyle}>{account.accountNmbr}</td>
               <td style={tdStyle}>{account.currentBalance}</td>
               <td style={tdStyle}>{account.currency}</td>
-              <td style={tdStyle}>{account.status !== "INACTIVE" ? "Habilitada" : "Deshabilitada"}</td>
+              <td style={tdStyle}>{account.status === "ACTIVE" ? "Habilitada" : "Deshabilitada"}</td>
               <td style={tdStyle}>{account.userId}</td>
               {isAdmin && (
                 <td style={tdStyle}>
