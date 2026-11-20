@@ -76,6 +76,7 @@ Para cambiar el backend, editar `.env` o exportar las env vars antes de `npm run
 npm run dev      # Servidor de desarrollo Vite con HMR
 npm run build    # Build de producción (output en dist/)
 npm run lint     # ESLint sobre todo el proyecto
+npm test         # Tests (Vitest, una sola corrida)
 npm run preview  # Preview del build de producción
 ```
 
@@ -96,6 +97,6 @@ npm run preview  # Preview del build de producción
 
 ## Notas y TODOs
 
-- No hay tests unitarios ni de integración configurados.
+- Tests: Vitest + Testing Library (jsdom). `npm test`; archivos `*.test.js(x)` junto al código, helpers en `src/test/helpers.js` (`makeToken`, `mockFetch`, `jsonResponse`).
 - No hay framework de formularios (validación manual con `required` del HTML).
 - No hay manejo de estado global para el usuario autenticado más allá de `localStorage`.

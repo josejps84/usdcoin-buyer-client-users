@@ -15,6 +15,7 @@ npm run dev
 - `npm run dev` – dev server with HMR
 - `npm run build` – production build in `dist/`
 - `npm run lint` – ESLint
+- `npm test` – unit/component tests (Vitest + Testing Library)
 
 ## Docker
 
